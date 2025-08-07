@@ -7,7 +7,6 @@ build
 # 编译产物
 ./build_*
 # 编译产物
-dist
 target
 # 第三方包
 node_modules

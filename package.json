@@ -11,6 +11,7 @@
     "deploy": "s deploy -t s.master.yaml --use-local"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.6.1",
     "@micro-zoe/micro-app": "1.0.0-rc.19",
     "axios": "^1.7.7",
     "element-plus": "^2.10.3",

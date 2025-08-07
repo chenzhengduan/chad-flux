@@ -22,13 +22,9 @@ const router = createRouter({
   history: createWebHashHistory(window.__MICRO_APP_BASE_ROUTE__ || '/'),
   routes: [
     {
-      path: '/home',
-      component: () => import('./components/home.vue')
+      path: '/',
+      component: () => import('./pages/falAIImageEdit.vue')
     },
-    {
-      path: '/appoint',
-      component: () => import('./components/AppointCourse.vue')
-    }
   ]
 });
 
