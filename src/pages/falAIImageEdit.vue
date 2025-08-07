@@ -24,6 +24,18 @@
       </div>
     </div>
     <el-form class="falai-form" @submit.prevent="onSubmit" label-width="140px">
+      <el-form-item label="固定提示词：">
+        <div style="background: #f5f7fa; padding: 12px; border-radius: 6px; border: 1px solid #e4e7ed; margin-bottom: 8px;">
+          <div style="font-size: 14px; color: #606266; line-height: 1.6;">
+            保持瓶子的确切形状、比例和泵头位置不变。<br>
+            不要改变瓶子的数量、大小、角度、位置或布局 — 即使图像包含多个不同大小的瓶子。<br>
+            瓶子的结构和位置必须保持完全不变。<br>
+            任何添加的内容都应该自然地、干净地集成，而不破坏或覆盖原始布局。<br>
+            注意：请根据产品信息应用所有视觉更新，同时保持瓶子的完整性。
+          </div>
+        </div>
+        <el-checkbox v-model="useFixedPrompt" :disabled="!apiKey">使用固定提示词</el-checkbox>
+      </el-form-item>
       <el-form-item label="描述（Prompt）：">
         <el-input
           v-model="prompt"
@@ -90,7 +102,14 @@
       <div style="font-weight: bold;">生成结果：</div>
       <div style="display: flex; flex-wrap: wrap; gap: 16px;">
         <div v-for="(img, i) in resultImages" :key="i" style="border:1px solid #eee; padding:8px; border-radius:6px; background:#fff;">
-          <img :src="img.url" :alt="'result-'+i" :width="img.width/4" :height="img.height/4" style="max-width:200px; display:block; margin-bottom:8px;" />
+          <img 
+            :src="img.url" 
+            :alt="'result-'+i" 
+            :width="img.width/4" 
+            :height="img.height/4" 
+            style="max-width:200px; display:block; margin-bottom:8px; cursor: pointer;" 
+            @click="previewImage(img)"
+          />
           <div style="font-size:12px; color:#888;">{{ img.width }}x{{ img.height }}</div>
         </div>
       </div>
@@ -103,12 +122,33 @@
         <div style="margin-bottom:6px;">引导强度: {{ item.params.guidance_scale }} | 数量: {{ item.params.num_images }} | 输出格式: {{ item.params.output_format }} <span v-if="item.params.aspect_ratio">| 宽高比: {{ item.params.aspect_ratio }}</span></div>
         <div style="display: flex; flex-wrap: wrap; gap: 12px;">
           <div v-for="(img, i) in item.images" :key="i" style="border:1px solid #eee; padding:4px; border-radius:4px; background:#fff;">
-            <img :src="img.url" :alt="'history-'+idx+'-'+i" :width="img.width/8" :height="img.height/8" style="max-width:100px; display:block;" />
+            <img 
+              :src="img.url" 
+              :alt="'history-'+idx+'-'+i" 
+              :width="img.width/8" 
+              :height="img.height/8" 
+              style="max-width:100px; display:block; cursor: pointer;" 
+              @click="previewImage(img)"
+            />
             <div style="font-size:11px; color:#aaa;">{{ img.width }}x{{ img.height }}</div>
           </div>
         </div>
       </div>
     </div>
+    
+    <!-- 图片预览弹窗 -->
+    <el-dialog v-model="previewVisible" title="图片预览" width="80%" :before-close="closePreview">
+      <div style="text-align: center;">
+        <img 
+          v-if="previewImageData" 
+          :src="previewImageData.url" 
+          style="max-width: 100%; max-height: 70vh; object-fit: contain;" 
+        />
+        <div v-if="previewImageData" style="margin-top: 16px; color: #666;">
+          尺寸: {{ previewImageData.width }} x {{ previewImageData.height }}
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -156,14 +196,36 @@ const numImages = ref(1);
 const outputFormat = ref('jpeg');
 const aspectRatio = ref('');
 
+// 固定提示词相关
+const useFixedPrompt = ref(true);
+const fixedPromptText = `Keep the exact same bottle shape, proportions, and pump head position.
+Do not change the number, size, angle, position, or layout of the bottles — even if the image contains multiple bottles of different sizes.
+The structure and placement of the bottles must remain completely unchanged.
+Any added content should be naturally and cleanly integrated without disrupting or covering the original layout.
+Note: Please apply all visual updates based on the product information while preserving the bottle`;
+
 const loading = ref(false);
 const logs = ref<string[]>([]);
 const errorMsg = ref('');
 const resultImages = ref<{url:string,width:number,height:number}[]>([]);
 const history = ref<{params:any, images:any[], time:string}[]>([]);
 
-function onFileChange(uploadFile) {
+// 图片预览相关
+const previewVisible = ref(false);
+const previewImageData = ref<{url:string,width:number,height:number} | null>(null);
+
+function onFileChange(uploadFile: any) {
   file.value = uploadFile.raw || null;
+}
+
+function previewImage(img: {url:string,width:number,height:number}) {
+  previewImageData.value = img;
+  previewVisible.value = true;
+}
+
+function closePreview() {
+  previewVisible.value = false;
+  previewImageData.value = null;
 }
 
 async function onSubmit() {
@@ -204,8 +266,14 @@ async function onSubmit() {
       return;
     }
     logs.value.push('正在请求 fal.ai 生成图片...');
+    
+    // 拼接固定提示词和用户输入
+    const finalPrompt = useFixedPrompt.value 
+      ? `${fixedPromptText}\n\n${prompt.value}`
+      : prompt.value;
+    
     const params = {
-      prompt: prompt.value,
+      prompt: finalPrompt,
       image_url: usedImageUrl,
       guidance_scale: guidanceScale.value,
       num_images: numImages.value,
