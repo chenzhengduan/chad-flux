@@ -49,19 +49,19 @@
         <span style="margin: 0 8px;">或</span>
         <el-input v-model="imageUrl" :disabled="!apiKey" placeholder="图片 URL（可选）" style="width: 260px;" />
       </el-form-item>
-      <el-form-item label="引导强度（guidance_scale）：">
+      <el-form-item label="引导强度：">
         <el-input-number v-model="guidanceScale" :min="1" :max="20" :step="0.1" :disabled="!apiKey" />
       </el-form-item>
-      <el-form-item label="生成图片数量（num_images）：">
+      <el-form-item label="生成图片数量：">
         <el-input-number v-model="numImages" :min="1" :max="4" :disabled="!apiKey" />
       </el-form-item>
-      <el-form-item label="输出格式（output_format）：">
+      <el-form-item label="输出格式：">
         <el-select v-model="outputFormat" :disabled="!apiKey" style="width: 120px;">
           <el-option label="JPEG 格式" value="jpeg" />
           <el-option label="PNG 格式" value="png" />
         </el-select>
       </el-form-item>
-      <el-form-item label="宽高比（aspect_ratio）：">
+      <el-form-item label="宽高比：">
         <el-select v-model="aspectRatio" :disabled="!apiKey" style="width: 120px;">
           <el-option label="默认" value="" />
           <el-option label="21:9" value="21:9" />
@@ -120,15 +120,14 @@ let fal: any = null;
 const apiKeyInput = ref('');
 const apiKey = ref<string | null>(null);
 
-onMounted(async () => {
-  const saved = localStorage.getItem('fal_apikey');
-  if (saved) {
-    apiKeyInput.value = saved;
-    apiKey.value = saved;
-    await loadFalClient();
-    if (apiKey.value) fal.config({ credentials: apiKey.value });
-  }
-});
+// 移除 onMounted 里的 localStorage 逻辑
+// onMounted(() => {
+//   const saved = localStorage.getItem('fal_apikey');
+//   if (saved) {
+//     apiKeyInput.value = saved;
+//     apiKey.value = saved;
+//   }
+// });
 
 async function loadFalClient() {
   if (!fal) {
@@ -138,14 +137,13 @@ async function loadFalClient() {
 
 function saveApiKey() {
   if (apiKeyInput.value) {
-    localStorage.setItem('fal_apikey', apiKeyInput.value);
+    // localStorage.setItem('fal_apikey', apiKeyInput.value); // 移除
     apiKey.value = apiKeyInput.value;
-    if (fal) fal.config({ credentials: apiKeyInput.value });
   }
 }
 
 function clearApiKey() {
-  localStorage.removeItem('fal_apikey');
+  // localStorage.removeItem('fal_apikey'); // 移除
   apiKeyInput.value = '';
   apiKey.value = null;
 }
