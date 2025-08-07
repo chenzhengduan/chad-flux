@@ -31,6 +31,7 @@
             不要改变瓶子的数量、大小、角度、位置或布局 — 即使图像包含多个不同大小的瓶子。<br>
             瓶子的结构和位置必须保持完全不变。<br>
             任何添加的内容都应该自然地、干净地集成，而不破坏或覆盖原始布局。<br>
+            非要求不要追加额外的瓶子出来。<br>
             注意：请根据产品信息应用所有视觉更新，同时保持瓶子的完整性。
           </div>
         </div>
@@ -45,6 +46,9 @@
           placeholder="请输入描述，如：在面粉旁边放一个甜甜圈。"
           style="width: 100%; font-size: 16px;"
         />
+        <el-tooltip content="用于生成图像的提示词" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
       </el-form-item>
       <el-form-item label="图片：">
         <el-upload
@@ -60,18 +64,62 @@
         </el-upload>
         <span style="margin: 0 8px;">或</span>
         <el-input v-model="imageUrl" :disabled="!apiKey" placeholder="图片 URL（可选）" style="width: 260px;" />
+        
+        <!-- 选择的图片缩略图 -->
+        <div v-if="selectedImagePreview" style="margin-top: 12px;">
+          <div style="font-size: 12px; color: #666; margin-bottom: 4px;">选择的图片：</div>
+          <div style="display: inline-block; border: 1px solid #e4e7ed; border-radius: 4px; padding: 4px; background: #fff;">
+            <img 
+              :src="selectedImagePreview" 
+              alt="selected-image"
+              style="max-width: 120px; max-height: 80px; display: block; cursor: pointer; object-fit: contain;" 
+              @click="previewSelectedImage"
+            />
+          </div>
+        </div>
+        <el-tooltip content="用于 omnimodel 的图像提示" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item label="种子值（Seed）：">
+        <el-input-number v-model="seed" :disabled="!apiKey" :min="1" :max="999999" style="width: 120px;" />
+        <el-tooltip content="相同的种子值和提示词给定给相同版本的模型将每次都输出相同的图像" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
       </el-form-item>
       <el-form-item label="引导强度：">
         <el-input-number v-model="guidanceScale" :min="1" :max="20" :step="0.1" :disabled="!apiKey" />
+        <el-tooltip content="CFG（无分类器引导）比例是衡量您希望模型在寻找相关图像时对提示词的遵循程度。默认值：3.5" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
       </el-form-item>
       <el-form-item label="生成图片数量：">
-        <el-input-number v-model="numImages" :min="1" :max="4" :disabled="!apiKey" />
+        <el-input-number v-model="numImages" :min="1" :max="6" :disabled="!apiKey" />
+        <el-tooltip content="要生成的图像数量。默认值：1" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
       </el-form-item>
       <el-form-item label="输出格式：">
         <el-select v-model="outputFormat" :disabled="!apiKey" style="width: 120px;">
           <el-option label="JPEG 格式" value="jpeg" />
           <el-option label="PNG 格式" value="png" />
         </el-select>
+        <el-tooltip content="生成图像的格式。默认值：jpeg" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item label="安全等级：">
+        <el-select v-model="safetyTolerance" :disabled="!apiKey" style="width: 120px;">
+          <el-option label="最严格" value="1" />
+          <el-option label="严格" value="2" />
+          <el-option label="中等" value="3" />
+          <el-option label="宽松" value="4" />
+          <el-option label="最宽松" value="5" />
+          <el-option label="无限制" value="6" />
+        </el-select>
+        <el-tooltip content="生成图像的安全容差级别，1最严格，6最宽松。默认值：2" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
       </el-form-item>
       <el-form-item label="宽高比：">
         <el-select v-model="aspectRatio" :disabled="!apiKey" style="width: 120px;">
@@ -86,6 +134,15 @@
           <el-option label="9:16" value="9:16" />
           <el-option label="9:21" value="9:21" />
         </el-select>
+        <el-tooltip content="生成图像的宽高比" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
+      </el-form-item>
+      <el-form-item label="同步模式：">
+        <el-switch v-model="syncMode" :disabled="!apiKey" />
+        <el-tooltip content="如果设置为true，函数将等待图像生成并上传后再返回响应。默认值：false" placement="top">
+          <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
+        </el-tooltip>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" native-type="submit" :disabled="!apiKey || loading">{{ loading ? '生成中...' : '生成图片' }}</el-button>
@@ -149,6 +206,17 @@
         </div>
       </div>
     </el-dialog>
+    
+    <!-- 选择图片预览弹窗 -->
+    <el-dialog v-model="selectedImagePreviewVisible" title="选择图片预览" width="80%" :before-close="closeSelectedImagePreview">
+      <div style="text-align: center;">
+        <img 
+          v-if="selectedImagePreview" 
+          :src="selectedImagePreview" 
+          style="max-width: 100%; max-height: 70vh; object-fit: contain;" 
+        />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -191,10 +259,13 @@ function clearApiKey() {
 const prompt = ref('');
 const imageUrl = ref('');
 const file = ref<File | null>(null);
+const seed = ref<number | null>(null);
 const guidanceScale = ref(3.5);
 const numImages = ref(1);
 const outputFormat = ref('jpeg');
+const safetyTolerance = ref('2');
 const aspectRatio = ref('');
+const syncMode = ref(false);
 
 // 固定提示词相关
 const useFixedPrompt = ref(true);
@@ -202,6 +273,7 @@ const fixedPromptText = `Keep the exact same bottle shape, proportions, and pump
 Do not change the number, size, angle, position, or layout of the bottles — even if the image contains multiple bottles of different sizes.
 The structure and placement of the bottles must remain completely unchanged.
 Any added content should be naturally and cleanly integrated without disrupting or covering the original layout.
+Non-requirement: Do not add additional bottles.
 Note: Please apply all visual updates based on the product information while preserving the bottle`;
 
 const loading = ref(false);
@@ -214,8 +286,33 @@ const history = ref<{params:any, images:any[], time:string}[]>([]);
 const previewVisible = ref(false);
 const previewImageData = ref<{url:string,width:number,height:number} | null>(null);
 
+// 选择图片预览相关
+const selectedImagePreview = ref<string | null>(null);
+const selectedImagePreviewVisible = ref(false);
+
 function onFileChange(uploadFile: any) {
   file.value = uploadFile.raw || null;
+  
+  // 生成缩略图预览
+  if (uploadFile.raw) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      selectedImagePreview.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(uploadFile.raw);
+  } else {
+    selectedImagePreview.value = null;
+  }
+}
+
+function previewSelectedImage() {
+  if (selectedImagePreview.value) {
+    selectedImagePreviewVisible.value = true;
+  }
+}
+
+function closeSelectedImagePreview() {
+  selectedImagePreviewVisible.value = false;
 }
 
 function previewImage(img: {url:string,width:number,height:number}) {
@@ -272,13 +369,16 @@ async function onSubmit() {
       ? `${fixedPromptText}\n\n${prompt.value}`
       : prompt.value;
     
-    const params = {
+    const params: any = {
       prompt: finalPrompt,
       image_url: usedImageUrl,
       guidance_scale: guidanceScale.value,
       num_images: numImages.value,
       output_format: outputFormat.value,
-      ...(aspectRatio.value ? { aspect_ratio: aspectRatio.value } : {})
+      safety_tolerance: safetyTolerance.value,
+      sync_mode: syncMode.value,
+      ...(aspectRatio.value ? { aspect_ratio: aspectRatio.value } : {}),
+      ...(seed.value ? { seed: seed.value } : {})
     };
     const result = await fal.subscribe('fal-ai/flux-pro/kontext/max', {
       input: params,
