@@ -20,13 +20,6 @@ export default defineConfig({
       'Access-Control-Allow-Headers': 'X-Requested-With, Content-Type, Authorization',
     },
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@use "~/assets/sub-element-theme.scss" as *;`,
-      },
-    },
-  },
   build: {
     outDir: 'dist',
     cssCodeSplit: false,

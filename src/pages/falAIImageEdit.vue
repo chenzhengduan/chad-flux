@@ -2,15 +2,20 @@
   <div class="fal-ai-image-edit">
     <h2>fal.ai 图像编辑 DEMO</h2>
     <div class="apikey-section">
-      <label for="fal-apikey">API Key：</label>
-      <input
-        id="fal-apikey"
-        v-model="apiKeyInput"
-        type="password"
-        placeholder="请输入 fal.ai API Key"
-      />
-      <button @click="saveApiKey">保存</button>
-      <button v-if="apiKey" @click="clearApiKey">清除</button>
+      <el-form :inline="true" class="apikey-form">
+        <el-form-item label="API Key：">
+          <el-input
+            v-model="apiKeyInput"
+            type="password"
+            placeholder="请输入 fal.ai API Key"
+            style="width: 260px;"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="saveApiKey">保存</el-button>
+          <el-button v-if="apiKey" @click="clearApiKey" type="default">清除</el-button>
+        </el-form-item>
+      </el-form>
       <div class="tip" v-if="!apiKey">
         <span style="color: red;">请先输入 API Key，所有功能仅用于 DEMO，切勿用于生产环境！</span>
       </div>
@@ -18,52 +23,62 @@
         <span style="color: green;">API Key 已保存，可正常使用 fal.ai 能力。</span>
       </div>
     </div>
-    <!-- 后续功能区 -->
-    <form class="falai-form" @submit.prevent="onSubmit">
-      <div class="form-row">
-        <label>描述（Prompt）：</label>
-        <input v-model="prompt" :disabled="!apiKey" placeholder="请输入描述，如：在面粉旁边放一个甜甜圈。" />
-      </div>
-      <div class="form-row">
-        <label>图片：</label>
-        <input type="file" accept="image/*" @change="onFileChange" :disabled="!apiKey" />
+    <el-form class="falai-form" @submit.prevent="onSubmit" label-width="140px">
+      <el-form-item label="描述（Prompt）：">
+        <el-input
+          v-model="prompt"
+          type="textarea"
+          :autosize="{ minRows: 4, maxRows: 8 }"
+          :disabled="!apiKey"
+          placeholder="请输入描述，如：在面粉旁边放一个甜甜圈。"
+          style="width: 100%; font-size: 16px;"
+        />
+      </el-form-item>
+      <el-form-item label="图片：">
+        <el-upload
+          :show-file-list="true"
+          :disabled="!apiKey"
+          accept="image/*"
+          action="#"
+          :auto-upload="false"
+          :on-change="onFileChange"
+          :limit="1"
+        >
+          <el-button :disabled="!apiKey">选择图片</el-button>
+        </el-upload>
         <span style="margin: 0 8px;">或</span>
-        <input v-model="imageUrl" :disabled="!apiKey" placeholder="图片 URL（可选）" />
-      </div>
-      <div class="form-row">
-        <label>引导强度（guidance_scale）：</label>
-        <input type="number" step="0.1" v-model.number="guidanceScale" :disabled="!apiKey" min="1" max="20" />
-      </div>
-      <div class="form-row">
-        <label>生成图片数量（num_images）：</label>
-        <input type="number" v-model.number="numImages" :disabled="!apiKey" min="1" max="4" />
-      </div>
-      <div class="form-row">
-        <label>输出格式（output_format）：</label>
-        <select v-model="outputFormat" :disabled="!apiKey">
-          <option value="jpeg">JPEG 格式</option>
-          <option value="png">PNG 格式</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>宽高比（aspect_ratio）：</label>
-        <select v-model="aspectRatio" :disabled="!apiKey">
-          <option value="">默认</option>
-          <option value="21:9">21:9</option>
-          <option value="16:9">16:9</option>
-          <option value="4:3">4:3</option>
-          <option value="3:2">3:2</option>
-          <option value="1:1">1:1</option>
-          <option value="2:3">2:3</option>
-          <option value="3:4">3:4</option>
-          <option value="9:16">9:16</option>
-          <option value="9:21">9:21</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <button type="submit" :disabled="!apiKey || loading">{{ loading ? '生成中...' : '生成图片' }}</button>
-      </div>
-    </form>
+        <el-input v-model="imageUrl" :disabled="!apiKey" placeholder="图片 URL（可选）" style="width: 260px;" />
+      </el-form-item>
+      <el-form-item label="引导强度（guidance_scale）：">
+        <el-input-number v-model="guidanceScale" :min="1" :max="20" :step="0.1" :disabled="!apiKey" />
+      </el-form-item>
+      <el-form-item label="生成图片数量（num_images）：">
+        <el-input-number v-model="numImages" :min="1" :max="4" :disabled="!apiKey" />
+      </el-form-item>
+      <el-form-item label="输出格式（output_format）：">
+        <el-select v-model="outputFormat" :disabled="!apiKey" style="width: 120px;">
+          <el-option label="JPEG 格式" value="jpeg" />
+          <el-option label="PNG 格式" value="png" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="宽高比（aspect_ratio）：">
+        <el-select v-model="aspectRatio" :disabled="!apiKey" style="width: 120px;">
+          <el-option label="默认" value="" />
+          <el-option label="21:9" value="21:9" />
+          <el-option label="16:9" value="16:9" />
+          <el-option label="4:3" value="4:3" />
+          <el-option label="3:2" value="3:2" />
+          <el-option label="1:1" value="1:1" />
+          <el-option label="2:3" value="2:3" />
+          <el-option label="3:4" value="3:4" />
+          <el-option label="9:16" value="9:16" />
+          <el-option label="9:21" value="9:21" />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" native-type="submit" :disabled="!apiKey || loading">{{ loading ? '生成中...' : '生成图片' }}</el-button>
+      </el-form-item>
+    </el-form>
     <div v-if="errorMsg" style="color: red; margin-top: 16px;">{{ errorMsg }}</div>
     <div v-if="logs.length" style="margin-top: 16px;">
       <div style="font-weight: bold;">日志：</div>
@@ -85,7 +100,7 @@
       <div v-for="(item, idx) in history" :key="idx" style="margin-top: 18px; padding:12px; border:1px solid #eee; border-radius:6px; background:#f8f8fa;">
         <div style="font-size:13px; color:#888; margin-bottom:6px;">{{ item.time }}</div>
         <div style="margin-bottom:6px;">Prompt: <span style="color:#333">{{ item.params.prompt }}</span></div>
-        <div style="margin-bottom:6px;">guidance_scale: {{ item.params.guidance_scale }} | num_images: {{ item.params.num_images }} | output_format: {{ item.params.output_format }} <span v-if="item.params.aspect_ratio">| aspect_ratio: {{ item.params.aspect_ratio }}</span></div>
+        <div style="margin-bottom:6px;">引导强度: {{ item.params.guidance_scale }} | 数量: {{ item.params.num_images }} | 输出格式: {{ item.params.output_format }} <span v-if="item.params.aspect_ratio">| 宽高比: {{ item.params.aspect_ratio }}</span></div>
         <div style="display: flex; flex-wrap: wrap; gap: 12px;">
           <div v-for="(img, i) in item.images" :key="i" style="border:1px solid #eee; padding:4px; border-radius:4px; background:#fff;">
             <img :src="img.url" :alt="'history-'+idx+'-'+i" :width="img.width/8" :height="img.height/8" style="max-width:100px; display:block;" />
@@ -99,6 +114,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
 let fal: any = null;
 
 const apiKeyInput = ref('');
@@ -148,19 +164,21 @@ const errorMsg = ref('');
 const resultImages = ref<{url:string,width:number,height:number}[]>([]);
 const history = ref<{params:any, images:any[], time:string}[]>([]);
 
-function onFileChange(e: Event) {
-  const target = e.target as HTMLInputElement;
-  if (target.files && target.files.length > 0) {
-    file.value = target.files[0];
-  } else {
-    file.value = null;
-  }
+function onFileChange(uploadFile) {
+  file.value = uploadFile.raw || null;
 }
 
 async function onSubmit() {
   errorMsg.value = '';
   logs.value = [];
   resultImages.value = [];
+  
+  // 检查必填项
+  if (!prompt.value.trim()) {
+    errorMsg.value = '请输入描述（Prompt）';
+    return;
+  }
+  
   loading.value = true;
   await loadFalClient();
   if (!fal) {
@@ -228,47 +246,26 @@ async function onSubmit() {
 
 <style scoped>
 .fal-ai-image-edit {
-  max-width: 600px;
+  max-width: 700px;
   margin: 40px auto;
-  padding: 24px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  background: #fafbfc;
+  padding: 32px 32px 24px 32px;
+  border: 1px solid #e4e7ed;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.04);
 }
 .apikey-section {
   margin-bottom: 24px;
 }
-input[type="password"] {
-  margin: 0 8px;
-  padding: 4px 8px;
-}
-button {
-  margin-right: 8px;
+.falai-form {
+  margin-top: 32px;
+  padding: 16px 0 0 0;
+  background: #fff;
+  border-radius: 6px;
+  border: none;
 }
 .tip {
   margin-top: 8px;
   font-size: 14px;
-}
-.falai-form {
-  margin-top: 32px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 6px;
-  border: 1px solid #eee;
-}
-.form-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.form-row label {
-  width: 120px;
-  font-weight: bold;
-}
-.form-row input,
-.form-row select {
-  flex: 1;
-  padding: 4px 8px;
-  margin-right: 8px;
 }
 </style> 

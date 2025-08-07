@@ -1,5 +1,5 @@
 <template>
-  <el-config-provider namespace="sub">
+  <el-config-provider>
   <div>
     <router-view  />
   </div>
