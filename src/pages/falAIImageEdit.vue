@@ -26,13 +26,18 @@
     <el-form class="falai-form" @submit.prevent="onSubmit" label-width="140px">
       <el-form-item label="固定提示词：">
         <div style="background: #f5f7fa; padding: 12px; border-radius: 6px; border: 1px solid #e4e7ed; margin-bottom: 8px;">
-          <div style="font-size: 14px; color: #606266; line-height: 1.6;">
-            保持瓶子的确切形状、比例和泵头位置不变。<br>
-            不要改变瓶子的数量、大小、角度、位置或布局 — 即使图像包含多个不同大小的瓶子。<br>
-            瓶子的结构和位置必须保持完全不变。<br>
-            任何添加的内容都应该自然地、干净地集成，而不破坏或覆盖原始布局。<br>
-            非要求不要追加额外的瓶子出来。<br>
-            注意：请根据产品信息应用所有视觉更新，同时保持瓶子的完整性。
+           <div style="font-size: 14px; color: #606266; line-height: 1.6;">
+            <strong>基础规则：</strong><br>
+            • 保持瓶子的确切形状、大小、比例、泵头/喷嘴位置和结构不变<br>
+            • 保持瓶子的材质、厚度和透明度不变（除非明确要求改变）<br>
+            • 保持瓶子的所有原始物理尺寸<br>
+            • 仅在瓶子表面应用设计元素（图案、纹理、颜色或标签）<br>
+            • 根据用户要求替换或增强背景，但确保瓶子仍是主体<br>
+            • 避免添加人手、面部或不相关物体（除非明确要求）<br>
+            • 保持逼真的光照、阴影和自然反射<br>
+            • 确保所有设计变化与原始产品照片自然融合<br>
+            • 保持高端护肤产品包装静物摄影的专业品质<br>
+            注意：请根据产品信息应用所有视觉更新，同时保持瓶子的完整性。
           </div>
         </div>
         <el-checkbox v-model="useFixedPrompt" :disabled="!apiKey">使用固定提示词</el-checkbox>
@@ -51,6 +56,11 @@
         </el-tooltip>
       </el-form-item>
       <el-form-item label="图片：">
+        <div style="background: #fff7ed; padding: 8px; border-radius: 4px; border-left: 3px solid #f97316; margin-bottom: 8px;">
+          <div style="font-size: 12px; color: #c2410c;">
+            <strong>重要提示：</strong>第一张图片是主要对象，其他图片作为参考。AI会按照上传顺序处理图片。
+          </div>
+        </div>
         <el-upload
           :show-file-list="true"
           :disabled="!apiKey"
@@ -58,26 +68,33 @@
           action="#"
           :auto-upload="false"
           :on-change="onFileChange"
-          :limit="1"
+          :on-remove="onFileRemove"
+          :limit="5"
+          multiple
         >
           <el-button :disabled="!apiKey">选择图片</el-button>
         </el-upload>
         <span style="margin: 0 8px;">或</span>
-        <el-input v-model="imageUrl" :disabled="!apiKey" placeholder="图片 URL（可选）" style="width: 260px;" />
+        <el-input v-model="imageUrl" :disabled="!apiKey" placeholder="图片 URL（可选，多个用逗号分隔）" style="width: 260px;" />
         
         <!-- 选择的图片缩略图 -->
-        <div v-if="selectedImagePreview" style="margin-top: 12px;">
+        <div v-if="selectedImagePreviews.length" style="margin-top: 12px;">
           <div style="font-size: 12px; color: #666; margin-bottom: 4px;">选择的图片：</div>
-          <div style="display: inline-block; border: 1px solid #e4e7ed; border-radius: 4px; padding: 4px; background: #fff;">
-            <img 
-              :src="selectedImagePreview" 
-              alt="selected-image"
-              style="max-width: 120px; max-height: 80px; display: block; cursor: pointer; object-fit: contain;" 
-              @click="previewSelectedImage"
-            />
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <div v-for="(preview, index) in selectedImagePreviews" :key="index" style="border: 1px solid #e4e7ed; border-radius: 4px; padding: 4px; background: #fff; position: relative;">
+              <img 
+                :src="preview.url" 
+                alt="selected-image"
+                style="max-width: 120px; max-height: 80px; display: block; cursor: pointer; object-fit: contain;" 
+                @click="previewSelectedImage(preview.url)"
+              />
+              <div style="position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.7); color: white; padding: 2px 4px; border-radius: 2px; font-size: 10px;">
+                {{ index + 1 }}
+              </div>
+            </div>
           </div>
         </div>
-        <el-tooltip content="用于 omnimodel 的图像提示" placement="top">
+        <el-tooltip content="用于 omnimodel 的图像提示，第一张图片为主要对象" placement="top">
           <el-button type="text" size="small" style="padding: 0; margin-left: 8px;">参数说明</el-button>
         </el-tooltip>
       </el-form-item>
@@ -225,7 +242,7 @@ import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 let fal: any = null;
 
-const apiKeyInput = ref('');
+const apiKeyInput = ref('ce76ded4-4b39-42d3-86d8-b3920fb41b9b:ae0c075f6e887f0239930282f3f1ed4a');
 const apiKey = ref<string | null>(null);
 
 // 移除 onMounted 里的 localStorage 逻辑
@@ -259,6 +276,7 @@ function clearApiKey() {
 const prompt = ref('');
 const imageUrl = ref('');
 const file = ref<File | null>(null);
+const selectedImagePreviews = ref<{url: string, name: string}[]>([]);
 const seed = ref<number | null>(null);
 const guidanceScale = ref(3.5);
 const numImages = ref(1);
@@ -269,11 +287,16 @@ const syncMode = ref(false);
 
 // 固定提示词相关
 const useFixedPrompt = ref(true);
-const fixedPromptText = `Keep the exact same bottle shape, proportions, and pump head position.
-Do not change the number, size, angle, position, or layout of the bottles — even if the image contains multiple bottles of different sizes.
-The structure and placement of the bottles must remain completely unchanged.
-Any added content should be naturally and cleanly integrated without disrupting or covering the original layout.
-Non-requirement: Do not add additional bottles.
+const fixedPromptText = `[Base Rules]
+- Keep the exact bottle shape, size, proportions, pump/nozzle position, and structure unchanged.
+- Keep the bottle's material, thickness, and transparency the same unless explicitly requested to change.
+- Preserve all original physical dimensions of the bottle.
+- Only apply design elements such as patterns, textures, colors, or labels on the bottle surface.
+- Replace or enhance the background according to the user request, but ensure the bottle remains the main subject.
+- Avoid adding any human hands, faces, or unrelated objects unless explicitly requested.
+- Maintain realistic lighting, shading, and natural reflections on the bottle.
+- Ensure that all design changes appear naturally integrated with the original product photograph.
+- Maintain professional quality of high-end skincare product packaging still life photography.
 Note: Please apply all visual updates based on the product information while preserving the bottle`;
 
 const loading = ref(false);
@@ -291,24 +314,30 @@ const selectedImagePreview = ref<string | null>(null);
 const selectedImagePreviewVisible = ref(false);
 
 function onFileChange(uploadFile: any) {
-  file.value = uploadFile.raw || null;
-  
-  // 生成缩略图预览
   if (uploadFile.raw) {
+    // 生成缩略图预览
     const reader = new FileReader();
     reader.onload = (e) => {
-      selectedImagePreview.value = e.target?.result as string;
+      // 将上传的文件添加到 selectedImagePreviews 中
+      selectedImagePreviews.value.push({ 
+        url: e.target?.result as string, 
+        name: uploadFile.name 
+      });
     };
     reader.readAsDataURL(uploadFile.raw);
-  } else {
-    selectedImagePreview.value = null;
   }
 }
 
-function previewSelectedImage() {
-  if (selectedImagePreview.value) {
-    selectedImagePreviewVisible.value = true;
-  }
+function onFileRemove(uploadFile: any) {
+  // 从 selectedImagePreviews 中移除已移除的文件
+  selectedImagePreviews.value = selectedImagePreviews.value.filter(
+    (preview) => preview.name !== uploadFile.name
+  );
+}
+
+function previewSelectedImage(url: string) {
+  selectedImagePreview.value = url;
+  selectedImagePreviewVisible.value = true;
 }
 
 function closeSelectedImagePreview() {
@@ -349,29 +378,60 @@ async function onSubmit() {
     return;
   }
   fal.config({ credentials: apiKey.value });
-  let usedImageUrl = imageUrl.value;
+  let imageUrls: string[] = [];
+  
   try {
-    if (file.value) {
-      logs.value.push('正在上传图片...');
-      const url = await fal.storage.upload(file.value);
-      usedImageUrl = url;
-      logs.value.push('图片上传成功');
-    }
-    if (!usedImageUrl) {
-      errorMsg.value = '请上传图片或填写图片 URL';
+    if (selectedImagePreviews.value.length === 0) {
+      errorMsg.value = '请至少选择一张图片';
       loading.value = false;
       return;
     }
+
+    // 上传所有选择的图片文件
+    for (let i = 0; i < selectedImagePreviews.value.length; i++) {
+      const preview = selectedImagePreviews.value[i];
+      // 如果是base64格式（本地文件），需要上传到fal.ai
+      if (preview.url.startsWith('data:')) {
+        logs.value.push(`正在上传图片 ${i + 1}...`);
+        // 将base64转换为File对象
+        const response = await fetch(preview.url);
+        const blob = await response.blob();
+        const file = new File([blob], preview.name, { type: blob.type });
+        const url = await fal.storage.upload(file);
+        imageUrls.push(url);
+        logs.value.push(`图片 ${i + 1} 上传成功`);
+      } else {
+        // 已经是URL格式，直接使用
+        imageUrls.push(preview.url);
+        logs.value.push(`使用图片 ${i + 1} URL: ${preview.url}`);
+      }
+    }
+
+    // 如果提供了额外的图片URL，也添加到 imageUrls 中
+    if (imageUrl.value) {
+      imageUrl.value.split(',').forEach(url => {
+        if (url.trim()) {
+          imageUrls.push(url.trim());
+        }
+      });
+    }
+
+    if (imageUrls.length === 0) {
+      errorMsg.value = '没有有效的图片URL或文件可供生成';
+      loading.value = false;
+      return;
+    }
+    
     logs.value.push('正在请求 fal.ai 生成图片...');
     
     // 拼接固定提示词和用户输入
     const finalPrompt = useFixedPrompt.value 
-      ? `${fixedPromptText}\n\n${prompt.value}`
+      ? `${prompt.value}\n\n${fixedPromptText}`
       : prompt.value;
     
     const params: any = {
       prompt: finalPrompt,
-      image_url: usedImageUrl,
+      image_urls: imageUrls,
       guidance_scale: guidanceScale.value,
       num_images: numImages.value,
       output_format: outputFormat.value,
@@ -380,7 +440,7 @@ async function onSubmit() {
       ...(aspectRatio.value ? { aspect_ratio: aspectRatio.value } : {}),
       ...(seed.value ? { seed: seed.value } : {})
     };
-    const result = await fal.subscribe('fal-ai/flux-pro/kontext/max', {
+    const result = await fal.subscribe('fal-ai/flux-pro/kontext/max/multi', {
       input: params,
       logs: true,
       onQueueUpdate: (update: any) => {
